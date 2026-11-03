@@ -11,5 +11,7 @@ std::string  WideToChar(const std::wstring& str);
 std::string  BinaryToBase64(const std::vector<uint8_t>& str);
 std::string  BinaryToBase64(const uint8_t* data, size_t size);
 std::vector<uint8_t> Base64ToBinary(const std::string& str);
+std::string  WideToBase64(const std::wstring& str);
+std::wstring Base64ToWide(const std::string& str);
 
 #endif//INC_GDCL_STRING_CONVERT_H

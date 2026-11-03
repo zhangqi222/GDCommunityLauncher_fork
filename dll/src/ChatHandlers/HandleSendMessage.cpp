@@ -16,7 +16,7 @@ std::string HandleWriteSendMessage(uint8_t channel, std::wstring message, std::w
         { "RequestName", "Send" },
         { "Channel", channel },
         { "DirectTo", nullptr },
-        { "Message", WideToRaw(message) },
+        { "Message", WideToBase64(message) },
         { "Item", (item) ? itemJSON : nullptr }
     };
 
@@ -99,7 +99,7 @@ void HandleReadSendMessage(const json& response)
     {
         for (const json& line : message)
         {
-            std::wstring message = RawToWide(line.get<std::string>());
+            std::wstring message = Base64ToWide(line.get<std::string>());
             GameAPI::AddChatMessage(playerName, message, type, item);
         }
     }

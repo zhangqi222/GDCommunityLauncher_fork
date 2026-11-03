@@ -317,7 +317,7 @@ static void SavePotionsData(const std::filesystem::path& filePath, uint8_t* data
         if (uint32_t participantID = spCache->GetParticipantID(hardcore))
         {
             spCache->SetPotionsData(hardcore, data, size);
-            spServer->Send("SaveParticipantPotions", participantID, BinaryToBase64(data, size));
+            spServer->Send("SaveParticipantPotionsFile", participantID, BinaryToBase64(data, size));
         }
     }
 }
@@ -356,7 +356,7 @@ void ServerCoordinator::OnDirectWriteEvent(std::string filename, void* data, siz
 static void SaveCharacterData(const std::filesystem::path& filePath, uint8_t* data, size_t size)
 {
     Character character;
-    if (character.ReadFromBuffer(data, size, true))
+    if (character.ReadFromBuffer(data, size, true) && (spClient->IsPlayingSeason()))
     {
         const std::wstring& characterName = character._headerBlock._charName;
         uint32_t participantID = spCache->GetParticipantID(character._headerBlock._charIsHardcore);
@@ -410,7 +410,7 @@ static void SaveQuestData(const std::filesystem::path& filePath, uint8_t* data, 
     std::wstring characterName;
     GameAPI::Difficulty difficulty;
 
-    if ((EngineAPI::IsMainCampaign()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
+    if ((EngineAPI::IsMainCampaign()) && (spClient->IsPlayingSeason()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
     {
         if (uint32_t participantID = spCache->GetParticipantID(characterName))
         {
@@ -429,7 +429,7 @@ static void SaveConversationsData(const std::filesystem::path& filePath, uint8_t
     std::wstring characterName;
     GameAPI::Difficulty difficulty;
 
-    if ((EngineAPI::IsMainCampaign()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
+    if ((EngineAPI::IsMainCampaign()) && (spClient->IsPlayingSeason()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
     {
         if (uint32_t participantID = spCache->GetParticipantID(characterName))
         {
@@ -444,7 +444,7 @@ static void SaveMapData(const std::filesystem::path& filePath, uint8_t* data, si
     std::wstring characterName;
     GameAPI::Difficulty difficulty;
 
-    if ((EngineAPI::IsMainCampaign()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
+    if ((EngineAPI::IsMainCampaign()) && (spClient->IsPlayingSeason()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
     {
         if (uint32_t participantID = spCache->GetParticipantID(characterName))
         {
@@ -459,7 +459,7 @@ static void SaveFOWData(const std::filesystem::path& filePath, uint8_t* data, si
     std::wstring characterName;
     GameAPI::Difficulty difficulty;
 
-    if ((EngineAPI::IsMainCampaign()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
+    if ((EngineAPI::IsMainCampaign()) && (spClient->IsPlayingSeason()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
     {
         if (uint32_t participantID = spCache->GetParticipantID(characterName))
         {
@@ -810,12 +810,19 @@ void ServerCoordinator::OnWorldPreLoadEvent(std::string mapName, bool unk1, bool
             if (!hardcoreID)
             {
                 json result = spServer->Send("AddParticipant", true).get();
-                hardcoreID = result.at("Data").at("SeasonParticipantId").get<uint32_t>();
-                DownloadParticipantFiles(downloadQueue, hardcoreID);
-
-                if (const SeasonInfo* seasonInfo = spClient->GetSeasonByType(true))
+                if ((!result.is_null()) && (!result.at("Data").is_null()))
                 {
-                    downloadQueue->push(spServer->Send("GetSeasonChallenges", seasonInfo->_seasonID));
+                    hardcoreID = result.at("Data").at("SeasonParticipantId").get<uint32_t>();
+                    DownloadParticipantFiles(downloadQueue, hardcoreID);
+
+                    if (const SeasonInfo* seasonInfo = spClient->GetSeasonByType(true))
+                    {
+                        downloadQueue->push(spServer->Send("GetSeasonChallenges", seasonInfo->_seasonID));
+                    }
+                }
+                else
+                {
+                    Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to retrieve hardcore participant ID from server:", result.dump());
                 }
             }
 
@@ -823,12 +830,19 @@ void ServerCoordinator::OnWorldPreLoadEvent(std::string mapName, bool unk1, bool
             if (!softcoreID)
             {
                 json result = spServer->Send("AddParticipant", false).get();
-                softcoreID = result.at("Data").at("SeasonParticipantId").get<uint32_t>();
-                DownloadParticipantFiles(downloadQueue, softcoreID);
-
-                if (const SeasonInfo* seasonInfo = spClient->GetSeasonByType(false))
+                if ((!result.is_null()) && (!result.at("Data").is_null()))
                 {
-                    downloadQueue->push(spServer->Send("GetSeasonChallenges", seasonInfo->_seasonID));
+                    softcoreID = result.at("Data").at("SeasonParticipantId").get<uint32_t>();
+                    DownloadParticipantFiles(downloadQueue, softcoreID);
+
+                    if (const SeasonInfo* seasonInfo = spClient->GetSeasonByType(false))
+                    {
+                        downloadQueue->push(spServer->Send("GetSeasonChallenges", seasonInfo->_seasonID));
+                    }
+                }
+                else
+                {
+                    Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to retrieve softcore participant ID from server: %", result.dump());
                 }
             }
 

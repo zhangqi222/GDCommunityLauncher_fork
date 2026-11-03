@@ -225,3 +225,9 @@
 
 - Fixed a bug where pre-existing shared data could be loaded when first starting the game with cloud saving enabled.
 - Fixed a bug where items retrieved from the cloud stash could sometimes be duplicated when clicking on the smuggler NPC multiple times.
+
+## 2.0.3 (2026-11-03)
+
+- Fixed a bug where the launcher would block other programs from accessing the clipboard.
+- Fixed a bug where certain UTF-16 characters would cause the game to crash.
+- Fixed a bug where the shared potions file was not being synced properly.

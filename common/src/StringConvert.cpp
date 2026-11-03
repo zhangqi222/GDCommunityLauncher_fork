@@ -161,3 +161,27 @@ std::vector<uint8_t> Base64ToBinary(const std::string& str)
 
     return result;
 }
+
+std::string WideToBase64(const std::wstring& str)
+{
+    std::vector<uint8_t> buffer;
+    buffer.reserve(str.size() * 2);
+    for (wchar_t c : str)
+    {
+        buffer.push_back((char)((c >> 8) & 0xFF));
+        buffer.push_back((char)(c & 0xFF));
+    }
+    return BinaryToBase64(buffer);
+}
+
+std::wstring Base64ToWide(const std::string& str)
+{
+    std::wstring result;
+    std::vector<uint8_t> buffer = Base64ToBinary(str);
+    result.reserve(buffer.size());
+    for (size_t i = 0; (i + 1) < buffer.size(); i += 2)
+    {
+        result.push_back((((wchar_t)buffer[i]) << 8) | ((wchar_t)buffer[i+1]));
+    }
+    return result;
+}

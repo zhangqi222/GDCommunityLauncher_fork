@@ -83,9 +83,10 @@ void HandleSetMainPlayer(void* _this, uint32_t unk1)
 
             bool hasSeasonToken = GameAPI::PlayerHasToken(mainPlayer, seasonToken) ||
                                   HasParticipationTokenFromAPI(mainPlayer, seasonToken) || 
-                                  HasParticipationTokenFromFile(characterName, seasonToken);
+                                  HasParticipationTokenFromFile(characterName, seasonToken) ||
+                                  !GameAPI::HasPlayerBeenInGame(mainPlayer);
 
-            if ((hasSeasonToken) || (!GameAPI::HasPlayerBeenInGame(mainPlayer)))
+            if (hasSeasonToken)
             {
                 GameAPI::BestowTokenNow(mainPlayer, seasonToken);       // Grant the token just in case because the character might have it from another difficulty/mode or is new
                 spClient->SetActiveSeason(seasonInfo->_seasonID);
@@ -103,6 +104,10 @@ void HandleSetMainPlayer(void* _this, uint32_t unk1)
                 if (GameAPI::IsCloudStorageEnabled())
                 {
                     GameAPI::AddDialogA(GameAPI::DIALOG_OKAY, true, 0, "tagGDLeagueCloudWarning", true, 0, true, {}, {});
+                }
+                if (!hasSeasonToken)
+                {
+                    GameAPI::AddDialogA(GameAPI::DIALOG_OKAY, true, 0, "tagGDLeagueNoTokenWarning", true, 0, true, {}, {});
                 }
             }
             if (spClient->GetBranch() == SEASON_BRANCH_BETA)

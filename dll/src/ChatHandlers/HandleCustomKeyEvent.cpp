@@ -5,6 +5,7 @@
 // Special paste handler, since regular paste won't exceed the default chat window length
 bool HandlePasteEvent(std::wstring text, uint32_t carat, uint32_t selectStart, uint32_t selectEnd)
 {
+    bool result = false;
     if (OpenClipboard(nullptr))
     {
         if (HANDLE data = GetClipboardData(CF_TEXT))
@@ -36,12 +37,12 @@ bool HandlePasteEvent(std::wstring text, uint32_t carat, uint32_t selectStart, u
                 ChatAPI::SetSelectEndPosition(0);
 
                 GlobalUnlock(data);
-                return true;
+                result = true;
             }
         }
         CloseClipboard();
     }
-    return false;
+    return result;
 }
 
 typedef bool (*ControlKeyHandler)(std::wstring, uint32_t, uint32_t, uint32_t);
