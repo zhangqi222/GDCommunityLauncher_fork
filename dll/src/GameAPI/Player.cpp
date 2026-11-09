@@ -88,21 +88,6 @@ int32_t GetPlayerPartyID(void* player)
     return callback((void*)player);
 }
 
-bool PlayerHasToken(void* player, std::string token)
-{
-    typedef bool(__thiscall* HasTokenProto)(void*, std::string);
-
-    HMODULE gameDLL = GetModuleHandle(TEXT(GAME_DLL));
-    if ((!gameDLL) || (!player))
-        return false;
-
-    HasTokenProto callback = (HasTokenProto)GetProcAddress(gameDLL, GAPI_NAME_HAS_TOKEN);
-    if (!callback)
-        return false;
-
-    return callback((void*)player, token);
-}
-
 bool IsPlayerHardcore(void* player)
 {
     typedef bool(__thiscall* IsPlayerHardcoreProto)(void*);
@@ -236,6 +221,21 @@ void AddOrSubtractMoney(void* player, int32_t amount)
         return;
 
     callback(player, (uint32_t)abs(amount));
+}
+
+void SetAlwaysWarp(void* player, bool state)
+{
+    typedef void (__thiscall* SetAlwaysWarpProto)(void*, bool);
+
+    HMODULE gameDLL = GetModuleHandle(TEXT(GAME_DLL));
+    if (!gameDLL)
+        return;
+
+    SetAlwaysWarpProto callback = (SetAlwaysWarpProto)GetProcAddress(gameDLL, GAPI_NAME_SET_ALWAYS_WARP);
+    if ((!callback) || (!player))
+        return;
+
+    callback(player, state);
 }
 
 void IncrementPlayerLevel(void* player)

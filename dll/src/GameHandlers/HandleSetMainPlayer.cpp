@@ -90,8 +90,6 @@ void HandleSetMainPlayer(void* _this, uint32_t unk1)
             {
                 GameAPI::BestowTokenNow(mainPlayer, seasonToken);       // Grant the token just in case because the character might have it from another difficulty/mode or is new
                 spClient->SetActiveSeason(seasonInfo->_seasonID);
-                spClient->SetMainPlayerName(characterName);
-
                 EventManager::Publish(GDCL_EVENT_SET_SEASON_PLAYER, mainPlayer, seasonInfo);
             }
 

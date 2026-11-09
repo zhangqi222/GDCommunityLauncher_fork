@@ -33,6 +33,7 @@ ServerCoordinator::ServerCoordinator()
         EventManager::Subscribe(GDCL_EVENT_TRANSFER_PRE_SAVE,  OnTransferPreSaveEvent);
         EventManager::Subscribe(GDCL_EVENT_DELETE_FILE,        OnDeleteFileEvent);
         EventManager::Subscribe(GDCL_EVENT_BESTOW_TOKEN,       OnBestowTokenEvent);
+        EventManager::Subscribe(GDCL_EVENT_REMOVE_TOKEN,       OnRemoveTokenEvent);
     }
 }
 
@@ -73,19 +74,29 @@ void ServerCoordinator::OnUpdateEvent()
 
 void ServerCoordinator::OnPreShutdownEvent()
 {
-    std::wstring lastPlayerName = spClient->GetMainPlayerName();
-    if (const FileWriter* characterData = spCache->GetCharacterData(lastPlayerName))
+    // Destroy the window so that the process can continue to run in the background
+    if (HWND hwnd = GetActiveWindow())
+        DestroyWindow(hwnd);
+
+    std::unordered_set<std::wstring> dirtyCharacters = spCache->GetDirtyCharacters();
+    while (!dirtyCharacters.empty())
     {
-        // When shutting down, make sure that the server receives the data before continuing
-        // This ensures that the player data isn't lost due to the connection being terminated
-        std::atomic_bool lock = true;
-        uint32_t participantID = spCache->GetParticipantID(lastPlayerName);
-        spServer->Send("SaveCharacterFile", participantID, lastPlayerName, BinaryToBase64(characterData->GetBuffer(), characterData->GetBufferSize())).then(
-        [&lock](const json& response)
+        for (auto it = dirtyCharacters.begin(); it != dirtyCharacters.end();)
         {
-            lock = false;
-        });
-        while (lock && spServer->IsConnected());
+            std::wstring characterName = *it;
+            if (const FileWriter* buffer = spCache->GetCharacterData(characterName))
+            {
+                uint32_t participantID = spCache->GetParticipantID(characterName);
+                json response = spServer->Send("SaveCharacterFile", participantID, characterName, BinaryToBase64(buffer->GetBuffer(), buffer->GetBufferSize())).get();
+                HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
+                if (status != HTTP_STATUS_OK)
+                {
+                    it++;
+                    continue;
+                }
+            }
+            it = dirtyCharacters.erase(it);
+        }
     }
 }
 
@@ -355,15 +366,17 @@ void ServerCoordinator::OnDirectWriteEvent(std::string filename, void* data, siz
 
 static void SaveCharacterData(const std::filesystem::path& filePath, uint8_t* data, size_t size)
 {
+    bool newCharacter = !std::filesystem::exists(filePath);
+
     Character character;
-    if (character.ReadFromBuffer(data, size, true) && (spClient->IsPlayingSeason()))
+    if (character.ReadFromBuffer(data, size, true) && (spClient->IsPlayingSeason() || newCharacter))
     {
         const std::wstring& characterName = character._headerBlock._charName;
         uint32_t participantID = spCache->GetParticipantID(character._headerBlock._charIsHardcore);
         spCache->SetCharacterData(characterName, data, size);
 
         // Set the participant ID if it's a new character
-        if (!std::filesystem::exists(filePath))
+        if (newCharacter)
             spCache->SetCharacterID(characterName, participantID, 0);
     }
 }
@@ -409,7 +422,6 @@ static void SaveQuestData(const std::filesystem::path& filePath, uint8_t* data, 
 {
     std::wstring characterName;
     GameAPI::Difficulty difficulty;
-
     if ((EngineAPI::IsMainCampaign()) && (spClient->IsPlayingSeason()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
     {
         if (uint32_t participantID = spCache->GetParticipantID(characterName))
@@ -428,7 +440,6 @@ static void SaveConversationsData(const std::filesystem::path& filePath, uint8_t
 {
     std::wstring characterName;
     GameAPI::Difficulty difficulty;
-
     if ((EngineAPI::IsMainCampaign()) && (spClient->IsPlayingSeason()) && (ParseCharacterFilePath(filePath, characterName, difficulty)))
     {
         if (uint32_t participantID = spCache->GetParticipantID(characterName))
@@ -809,10 +820,10 @@ void ServerCoordinator::OnWorldPreLoadEvent(std::string mapName, bool unk1, bool
             uint32_t hardcoreID = spCache->GetParticipantID(true);
             if (!hardcoreID)
             {
-                json result = spServer->Send("AddParticipant", true).get();
-                if ((!result.is_null()) && (!result.at("Data").is_null()))
+                json response = spServer->Send("AddParticipant", true).get();
+                if ((!response.is_null()) && (!response.at("Data").is_null()))
                 {
-                    hardcoreID = result.at("Data").at("SeasonParticipantId").get<uint32_t>();
+                    hardcoreID = response.at("Data").at("SeasonParticipantId").get<uint32_t>();
                     DownloadParticipantFiles(downloadQueue, hardcoreID);
 
                     if (const SeasonInfo* seasonInfo = spClient->GetSeasonByType(true))
@@ -822,17 +833,17 @@ void ServerCoordinator::OnWorldPreLoadEvent(std::string mapName, bool unk1, bool
                 }
                 else
                 {
-                    Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to retrieve hardcore participant ID from server:", result.dump());
+                    Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to retrieve hardcore participant ID from server: %", response.dump());
                 }
             }
 
             uint32_t softcoreID = spCache->GetParticipantID(false);
             if (!softcoreID)
             {
-                json result = spServer->Send("AddParticipant", false).get();
-                if ((!result.is_null()) && (!result.at("Data").is_null()))
+                json response = spServer->Send("AddParticipant", false).get();
+                if ((!response.is_null()) && (!response.at("Data").is_null()))
                 {
-                    softcoreID = result.at("Data").at("SeasonParticipantId").get<uint32_t>();
+                    softcoreID = response.at("Data").at("SeasonParticipantId").get<uint32_t>();
                     DownloadParticipantFiles(downloadQueue, softcoreID);
 
                     if (const SeasonInfo* seasonInfo = spClient->GetSeasonByType(false))
@@ -842,7 +853,7 @@ void ServerCoordinator::OnWorldPreLoadEvent(std::string mapName, bool unk1, bool
                 }
                 else
                 {
-                    Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to retrieve softcore participant ID from server: %", result.dump());
+                    Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to retrieve softcore participant ID from server: %", response.dump());
                 }
             }
 
@@ -1015,4 +1026,9 @@ void ServerCoordinator::OnBestowTokenEvent(std::string token)
         uint32_t participantID = spCache->GetParticipantID(EngineAPI::IsHardcore());
         spServer->Send("SaveParticipantTag", participantID, token);
     }
+}
+
+void ServerCoordinator::OnRemoveTokenEvent(std::string token)
+{
+    // TODO: Change the tags system so that instead of saving the characters tags from their tokens, instead just track when they're removed from the tree here
 }

@@ -58,12 +58,12 @@ void HandleReadSendMessage(const json& response)
 
         if ((important) || (ChatAPI::IsServerMessagesEnabled()))
         {
-            playerName = EngineAPI::UI::Localize("tagGDCLChatDefaultName");
+            std::wstring name = EngineAPI::UI::Localize("tagGDCLChatDefaultName");
             const json& message = response.at("Message");
             for (const json& line : message)
             {
                 std::wstring message = CharToWide(line.get<std::string>());
-                GameAPI::AddChatMessage(playerName, message, ChatAPI::CHAT_TYPE_SYSTEM);
+                GameAPI::AddChatMessage(name, message, ChatAPI::CHAT_TYPE_SYSTEM);
             }
         }
         return;
@@ -71,13 +71,15 @@ void HandleReadSendMessage(const json& response)
     // Whisper from message
     else if (response.at("DirectUsername").is_string())
     {
-        playerName = EngineAPI::UI::Localize("tagGDCLChatDirectFrom", playerName);
+        playerName.push_back(0);
+        playerName = EngineAPI::UI::Localize("tagGDCLChatDirectFrom", WideToRaw(playerName, false).c_str());
         type = ChatAPI::CHAT_TYPE_NORMAL;
     }
     // Whisper to message
     else if (response.at("Channel").is_null())
     {
-        playerName = EngineAPI::UI::Localize("tagGDCLChatDirectTo", playerName);
+        playerName.push_back(0);
+        playerName = EngineAPI::UI::Localize("tagGDCLChatDirectTo", WideToRaw(playerName, false).c_str());
         type = ChatAPI::CHAT_TYPE_NORMAL;
     }
     // Skip other messages if global chat is turned off

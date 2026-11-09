@@ -24,6 +24,7 @@ void HandleLoadNewFormatData(void* _this, void* reader);
 void HandleSaveTransferStash(void* _this);
 void HandleLoadTransferStash(void* _this);
 void HandleBestowToken(void* _this, const GameAPI::TriggerToken& token);
+void HandleRemoveToken(void* _this, const GameAPI::TriggerToken& token);
 void HandleSyncDungeonProgress(void* _this, int unk1);
 void HandleSendChatMessage(void* _this, const std::wstring& name, const std::wstring& message, uint8_t type, std::vector<uint32_t> targets, uint32_t itemID);
 std::string HandleGetRootSavePath();
@@ -84,6 +85,7 @@ const std::vector<HookManager::Hook> _onlineHooks =
     { GAME_DLL,   GameAPI::GAPI_NAME_SAVE_TRANSFER_STASH,        &HandleSaveTransferStash,    true  },
     { GAME_DLL,   GameAPI::GAPI_NAME_LOAD_TRANSFER_STASH,        &HandleLoadTransferStash,    false },
     { GAME_DLL,   GameAPI::GAPI_NAME_BESTOW_TOKEN,               &HandleBestowToken,          true  },
+    { GAME_DLL,   GameAPI::GAPI_NAME_REMOVE_TOKEN,               &HandleRemoveToken,          true  },
     { GAME_DLL,   GameAPI::GAPI_NAME_SYNC_DUNGEON_PROGRESS,      &HandleSyncDungeonProgress,  false },
     { GAME_DLL,   GameAPI::GAPI_NAME_SEND_CHAT_MESSAGE,          &HandleSendChatMessage,      false },
     { GAME_DLL,   GameAPI::GAPI_NAME_GET_ROOT_SAVE_PATH,         &HandleGetRootSavePath,      false },

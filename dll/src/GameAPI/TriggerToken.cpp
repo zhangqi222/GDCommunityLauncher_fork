@@ -51,6 +51,21 @@ void BestowTokenNow(void* player, const std::string& token)
     return callback(player, token);
 }
 
+void RemoveTokenNow(void* player, const std::string& token)
+{
+    typedef void (__thiscall* RemovePlayerTokensProto)(void*, const std::string&);
+
+    HMODULE gameDLL = GetModuleHandle(TEXT(GAME_DLL));
+    if ((!gameDLL) || (!player))
+        return;
+
+    RemovePlayerTokensProto callback = (RemovePlayerTokensProto)GetProcAddress(gameDLL, GAPI_NAME_REMOVE_TOKEN_NOW);
+    if (!callback)
+        return;
+
+    return callback(player, token);
+}
+
 void ClearPlayerTokens(void* player)
 {
     typedef void (__thiscall* ClearPlayerTokensProto)(void*);
@@ -64,6 +79,21 @@ void ClearPlayerTokens(void* player)
         return;
 
     callback((LPVOID)player);
+}
+
+bool PlayerHasToken(void* player, std::string token)
+{
+    typedef bool(__thiscall* HasTokenProto)(void*, std::string);
+
+    HMODULE gameDLL = GetModuleHandle(TEXT(GAME_DLL));
+    if ((!gameDLL) || (!player))
+        return false;
+
+    HasTokenProto callback = (HasTokenProto)GetProcAddress(gameDLL, GAPI_NAME_HAS_TOKEN);
+    if (!callback)
+        return false;
+
+    return callback((void*)player, token);
 }
 
 }

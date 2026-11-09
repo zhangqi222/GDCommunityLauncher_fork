@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 
-std::wstring RawToWide(const std::string& str);
-std::string  WideToRaw(const std::wstring& str);
-std::wstring CharToWide(const std::string& str);
-std::string  WideToChar(const std::wstring& str);
+std::wstring RawToWide(const std::string& str, bool bigEndian = true);
+std::string  WideToRaw(const std::wstring& str, bool bigEndian = true);
+std::wstring CharToWide(const std::string& str, bool bigEndian = true);
+std::string  WideToChar(const std::wstring& str, bool bigEndian = true);
 std::string  BinaryToBase64(const std::vector<uint8_t>& str);
 std::string  BinaryToBase64(const uint8_t* data, size_t size);
 std::vector<uint8_t> Base64ToBinary(const std::string& str);

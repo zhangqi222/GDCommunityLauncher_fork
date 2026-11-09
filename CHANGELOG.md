@@ -231,3 +231,12 @@
 - Fixed a bug where the launcher would block other programs from accessing the clipboard.
 - Fixed a bug where certain UTF-16 characters would cause the game to crash.
 - Fixed a bug where the shared potions file was not being synced properly.
+
+## 2.0.4 (2026-11-09)
+
+- Fixed a bug where the to and from usernames when using the `/tell` command would not display correctly.
+- Fixed a bug where the launcher did not clean up custom fonts properly.
+- Fixed a bug where the launcher would not save configuration values when starting in offline mode.
+- Fixed a bug where the launcher would sometimes not properly reconnect the chat service after being disconnected.
+- Added checksum verification to all save endpoints.
+- The launcher now attempts to save data in the background upon exiting instead of blocking the current thread.

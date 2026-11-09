@@ -410,9 +410,9 @@ bool HandleChatChallengesCommand(std::wstring& name, std::wstring& message, uint
 
 bool HandleChatMuteCommand(std::wstring& name, std::wstring& message, uint32_t& channel, uint8_t& type, void* item)
 {
+    name = EngineAPI::UI::Localize("tagGDCLChatDefaultName");
     if (message.size() > 0)
     {
-        std::wstring name = EngineAPI::UI::Localize("tagGDCLChatDefaultName");
         std::wstring username = message.substr(0, message.find(L" "));
         std::string clientUsername = spClient->GetUsername();
 
@@ -575,8 +575,7 @@ bool HandleBetaDumpTagsCommand(std::wstring& name, std::wstring& message, uint32
 {
     if (IsBetaBranch())
     {
-        void* mainPlayer = GameAPI::GetMainPlayer();
-        if (mainPlayer != nullptr)
+        if (void* mainPlayer = GameAPI::GetMainPlayer())
         {
             std::wstring playerName = GameAPI::GetPlayerName(mainPlayer);
             std::string filename = "tags_" + WideToChar(playerName) + ".txt";
@@ -610,6 +609,35 @@ bool HandleBetaDumpTagsCommand(std::wstring& name, std::wstring& message, uint32
             GameAPI::SendChatMessage(name, message, ChatAPI::CHAT_TYPE_SYSTEM);
         }
 
+        return false;
+    }
+    return true;
+}
+
+bool HandleBetaWarpCommand(std::wstring& name, std::wstring& message, uint32_t& channel, uint8_t& type, void* item)
+{
+    if (IsBetaBranch())
+    {
+        if (void* mainPlayer = GameAPI::GetMainPlayer())
+        {
+            std::wstring subcommand = message.substr(0, message.find(L" "));
+            if ((subcommand == L"on") && (subcommand.size() == message.size()))
+            {
+                type = ChatAPI::CHAT_TYPE_SYSTEM;
+                name = EngineAPI::UI::Localize("tagGDCLChatDefaultName");
+                message = EngineAPI::UI::Localize("tagGDCLChatWarpEnabled");
+                GameAPI::SetAlwaysWarp(mainPlayer, true);
+                return true;
+            }
+            else if ((subcommand == L"off") && (subcommand.size() == message.size()))
+            {
+                type = ChatAPI::CHAT_TYPE_SYSTEM;
+                name = EngineAPI::UI::Localize("tagGDCLChatDefaultName");
+                message = EngineAPI::UI::Localize("tagGDCLChatWarpDisabled");
+                GameAPI::SetAlwaysWarp(mainPlayer, false);
+                return true;
+            }
+        }
         return false;
     }
     return true;
@@ -668,6 +696,7 @@ const std::unordered_map<std::wstring, ChatCommandHandler> chatCommandHandlers =
     { L"level",      HandleBetaLevelUpCommand },
     { L"money",      HandleBetaAddMoneyCommand },
     { L"tags",       HandleBetaDumpTagsCommand },
+    { L"warp",       HandleBetaWarpCommand },
 };
 
 bool HandleChatHelpCommand(std::wstring& name, std::wstring& message, uint32_t& channel, uint8_t& type, void* item)

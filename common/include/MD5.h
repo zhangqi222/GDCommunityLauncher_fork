@@ -39,4 +39,14 @@ inline std::string GenerateBufferMD5(uint8_t* buffer, size_t size)
     return result;
 }
 
+inline std::string GenerateBufferMD5(const std::string& buffer)
+{
+    // Capitalize the MD5 hash to match the server output
+    std::string result = websocketpp::md5::md5_hash_hex(buffer);
+    for (std::string::iterator it = result.begin(); it != result.end(); ++it)
+        *it = toupper(*it);
+
+    return result;
+}
+
 #endif//INC_GDCL_MD5_H

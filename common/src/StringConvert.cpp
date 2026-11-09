@@ -25,47 +25,55 @@ std::array<char, 64> _base64Chars =
     '4', '5', '6', '7', '8', '9', '+', '/'
 };
 
-std::wstring RawToWide(const std::string& str)
+std::wstring RawToWide(const std::string& str, bool bigEndian)
 {
     std::wstring result;
     result.reserve(str.size());
     for (size_t i = 0; (i + 1) < str.size(); i += 2)
     {
-        result.push_back((((wchar_t)str[i]) << 8) | ((wchar_t)str[i+1]));
+        result.push_back((bigEndian) ? (((wchar_t)str[i] << 8) | (wchar_t)str[i+1]) : (((wchar_t)str[i+1] << 8) | (wchar_t)str[i]));
     }
     return result;
 }
 
-std::string WideToRaw(const std::wstring& str)
+std::string WideToRaw(const std::wstring& str, bool bigEndian)
 {
     std::string result;
     result.reserve(str.size() * 2);
     for (wchar_t c : str)
     {
-        result.push_back((char)((c >> 8) & 0xFF));
-        result.push_back((char)(c & 0xFF));
+        if (bigEndian)
+        {
+            result.push_back((char)((c >> 8) & 0xFF));
+            result.push_back((char)(c & 0xFF));
+        }
+        else
+        {
+            result.push_back((char)(c & 0xFF));
+            result.push_back((char)((c >> 8) & 0xFF));
+        }
     }
     return result;
 }
 
-std::wstring CharToWide(const std::string& str)
+std::wstring CharToWide(const std::string& str, bool bigEndian)
 {
     std::wstring result;
     result.reserve(str.size());
     for (char c : str)
     {
-        result.push_back((wchar_t)c);
+        result.push_back((bigEndian) ? c : (c << 8));
     }
     return result;
 }
 
-std::string WideToChar(const std::wstring& str)
+std::string WideToChar(const std::wstring& str, bool bigEndian)
 {
     std::string result;
     result.reserve(str.size());
     for (wchar_t c : str)
     {
-        result.push_back((char)c);
+        result.push_back((bigEndian) ? c : (c >> 8));
     }
     return result;
 }

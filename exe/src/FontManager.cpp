@@ -2,15 +2,30 @@
 #include <gdiplus.h>
 #include "FontManager.h"
 
+FontManager::FontManager()
+{
+    _fontCollection = new Gdiplus::PrivateFontCollection;
+}
+
 FontManager::~FontManager()
 {
-    _fonts.clear();
+    ClearFonts();
 }
 
 FontManager* FontManager::GetInstance()
 {
     static FontManager instance;
     return &instance;
+}
+
+void FontManager::ClearFonts()
+{
+    _fonts.clear();
+    if (_fontCollection != nullptr)
+    {
+        delete _fontCollection;
+        _fontCollection = nullptr;
+    }
 }
 
 bool FontManager::LoadFontFromResource(const std::string& name, HRSRC resource)
@@ -22,15 +37,15 @@ bool FontManager::LoadFontFromResource(const std::string& name, HRSRC resource)
         {
             LPVOID buffer = LockResource(data);
             DWORD bufferSize = SizeofResource(instance, resource);
-            if ((buffer != nullptr) && (bufferSize > 0))
+            if ((buffer != nullptr) && (bufferSize > 0) && (_fontCollection != nullptr))
             {
-                if (_fontCollection.AddMemoryFont(buffer, bufferSize) == Gdiplus::Status::Ok)
+                if (_fontCollection->AddMemoryFont(buffer, bufferSize) == Gdiplus::Status::Ok)
                 {
-                    int32_t count = _fontCollection.GetFamilyCount();
+                    int32_t count = _fontCollection->GetFamilyCount();
                     int32_t found = 0;
 
                     Gdiplus::FontFamily* families = new Gdiplus::FontFamily[count];
-                    _fontCollection.GetFamilies(count, families, &found);
+                    _fontCollection->GetFamilies(count, families, &found);
                     _fonts.emplace(name, families[count-1].Clone());
                     delete[] families;
                     return true;

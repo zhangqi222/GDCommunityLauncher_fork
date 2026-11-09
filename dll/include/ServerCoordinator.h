@@ -25,6 +25,7 @@ class ServerCoordinator
         static void OnTransferPreSaveEvent();
         static void OnDeleteFileEvent(const char* filename);
         static void OnBestowTokenEvent(std::string token);
+        static void OnRemoveTokenEvent(std::string token);
 };
 
 #endif//INC_GDCL_DLL_SERVER_COORDINATOR_H

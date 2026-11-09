@@ -17,10 +17,12 @@ class FontManager
 
         Gdiplus::FontFamily* GetFont(const std::string& name);
 
-    private:
-        FontManager() {}
+        void ClearFonts();
 
-        Gdiplus::PrivateFontCollection _fontCollection;
+    private:
+        FontManager();
+
+        Gdiplus::PrivateFontCollection* _fontCollection;
         std::unordered_map<std::string, std::unique_ptr<Gdiplus::FontFamily>> _fonts;
 };
 

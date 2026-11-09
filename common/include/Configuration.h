@@ -16,7 +16,9 @@ class Configuration
 
         bool Save(const std::filesystem::path& path);
 
-        const Value* GetValue(const std::string& section, const std::string& name);
+        const Value* GetValue(const std::string& section, const std::string& name) const;
+
+        bool HasValue(const std::string& section, const std::string& name) const { return GetValue(section, name) != nullptr; }
 
         template <class T>
         void SetValue(const std::string& section, const std::string& name, T val)

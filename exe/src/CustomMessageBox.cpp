@@ -99,18 +99,8 @@ INT_PTR CALLBACK CustomMessageBox::MessageBoxHandler(HWND hwnd, UINT msg, WPARAM
         }
     }
 
-    if (_this != nullptr)
-    {
-        bool redraw = false;
-        for (const auto& pair : _this->_widgets)
-        {
-            if (pair.second->HandleMessage(hwnd, msg, wp, lp))
-                redraw = true;
-        }
-
-        if (redraw)
-            SendMessage(hwnd, WM_PAINT, NULL, NULL);
-    }
+    if ((_this != nullptr) && (_this->SendMessageToWidgets(hwnd, msg, wp, lp)))
+        SendMessage(hwnd, WM_PAINT, NULL, NULL);
         
     return DefWindowProc(hwnd, msg, wp, lp);
 }
@@ -209,4 +199,6 @@ void CustomMessageBox::CreateMessageBox(HWND parent, const std::wstring& text, u
         TranslateMessage(&message);
         DispatchMessage(&message);
     }
+
+    messageBox.ClearWidgets();
 }

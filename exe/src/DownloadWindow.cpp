@@ -365,15 +365,8 @@ INT_PTR CALLBACK DownloadWindow::DownloadWindowHandler(HWND hwnd, UINT msg, WPAR
             return TRUE;
         }
     }
-    
-    bool redraw = false;
-    for (const auto& pair : spDownloadWindow->_widgets)
-    {
-        if (pair.second->HandleMessage(hwnd, msg, wp, lp))
-            redraw = true;
-    }
 
-    if (redraw)
+    if (spDownloadWindow->SendMessageToWidgets(hwnd, msg, wp, lp))
         SendMessage(hwnd, WM_PAINT, NULL, NULL);
         
     return DefWindowProc(hwnd, msg, wp, lp);
@@ -485,6 +478,8 @@ bool HandleDownloadWindow()
             TranslateMessage(&message);
             DispatchMessage(&message);
         }
+
+        spDownloadWindow->ClearWidgets();
     }
     else
     {

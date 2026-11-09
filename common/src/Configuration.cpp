@@ -147,7 +147,7 @@ bool Configuration::Save(const std::filesystem::path& path)
                 out << (value->ToBool() ? "true" : "false") << "\n";
                 break;
             case VALUE_TYPE_STRING:
-                out << value->ToString() << "\n";
+                out << ((value->ToString() != nullptr) ? value->ToString() : "") << "\n";
                 break;
             default:
                 return false;
@@ -158,7 +158,7 @@ bool Configuration::Save(const std::filesystem::path& path)
     return true;
 }
 
-const Value* Configuration::GetValue(const std::string& section, const std::string& name)
+const Value* Configuration::GetValue(const std::string& section, const std::string& name) const
 {
     ConfigKey key({ section, name });
     auto it = _configValues.find(key);

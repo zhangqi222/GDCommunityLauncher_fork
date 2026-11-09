@@ -12,13 +12,15 @@ class CustomLayeredWindow
     public:
         virtual ~CustomLayeredWindow()
         {
-            _widgets.clear();
             _window = NULL;
+            ClearWidgets();
             DeleteDC(_buffer);
         }
 
         HDC GetBuffer() { return _buffer; }
         HWND GetWindow() { return _window; }
+
+        void ClearWidgets() { _widgets.clear(); }
 
         CustomWidget* GetWidget(std::string name) const
         {
@@ -30,11 +32,21 @@ class CustomLayeredWindow
             return nullptr;
         }
 
+        bool SendMessageToWidgets(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+        {
+            bool result = false;
+            for (const auto& pair : _widgets)
+            {
+                if (pair.second->HandleMessage(hwnd, msg, wp, lp))
+                    result = true;
+            }
+            return result;
+        }
+
         virtual void RegisterWindow(HINSTANCE instance) = 0;
         virtual void BuildWindow(HINSTANCE instance) = 0;
 
     protected:
-
         virtual void Redraw(HWND hwnd) = 0;
 
         HWND _window;

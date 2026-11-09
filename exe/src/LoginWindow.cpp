@@ -251,29 +251,28 @@ INT_PTR CALLBACK LoginWindow::LoginWindowHandler(HWND hwnd, UINT msg, WPARAM wp,
         }
         case WM_LOGIN_REQUEST:
         {
+            std::string hostName = DEFAULT_HOST_NAME;
+            if (Configuration* config = spLoginWindow->GetConfig())
+            {
+                const Value* hostValue = config->GetValue("Login", "hostname");
+                if ((hostValue) && (hostValue->GetType() == VALUE_TYPE_STRING))
+                    hostName = hostValue->ToString();
+            }
+
+            spClient->SetUsername(spLoginWindow->GetUsername());
+            spClient->SetPassword(spLoginWindow->GetPassword());
+            spClient->SetHostName(hostName);
+            spClient->SetRegion(spLoginWindow->GetRegion());
+            spClient->SetBranch(spLoginWindow->GetBranch());
+
             CustomSelectButton* offlineModeButton = dynamic_cast<CustomSelectButton*>(spLoginWindow->GetWidget("mode01"));
             if ((offlineModeButton != nullptr) && (offlineModeButton->IsSelected()))
             {
-                spClient->SetBranch(SEASON_BRANCH_OFFLINE);
                 spClient->SetSeasonName(OFFLINE_SEASON_NAME);
                 SendMessage(hwnd, WM_LOGIN_OFFLINE_MODE, NULL, NULL);
             }
             else
             {
-                std::string hostName = DEFAULT_HOST_NAME;
-                if (Configuration* config = spLoginWindow->GetConfig())
-                {
-                    const Value* hostValue = config->GetValue("Login", "hostname");
-                    if ((hostValue) && (hostValue->GetType() == VALUE_TYPE_STRING))
-                        hostName = hostValue->ToString();
-                }
-
-                spClient->SetUsername(spLoginWindow->GetUsername());
-                spClient->SetPassword(spLoginWindow->GetPassword());
-                spClient->SetHostName(hostName);
-                spClient->SetBranch(spLoginWindow->GetBranch());
-                spClient->SetRegion(spLoginWindow->GetRegion());
-
                 std::thread t(&ServerAuthenticate, LoginValidateCallback);
                 t.detach();
 
@@ -283,13 +282,9 @@ INT_PTR CALLBACK LoginWindow::LoginWindowHandler(HWND hwnd, UINT msg, WPARAM wp,
             return TRUE;
         }
         case WM_LOGIN_OK:
-        {
-            SetConfigValues();
-            DestroyWindow(hwnd);
-            return TRUE;
-        }
         case WM_LOGIN_OFFLINE_MODE:
         {
+            SetConfigValues();
             DestroyWindow(hwnd);
             return TRUE;
         }
@@ -309,14 +304,7 @@ INT_PTR CALLBACK LoginWindow::LoginWindowHandler(HWND hwnd, UINT msg, WPARAM wp,
         }
     }
 
-    bool redraw = false;
-    for (const auto& pair : spLoginWindow->_widgets)
-    {
-        if (pair.second->HandleMessage(hwnd, msg, wp, lp))
-            redraw = true;
-    }
-
-    if (redraw)
+    if (spLoginWindow->SendMessageToWidgets(hwnd, msg, wp, lp))
         SendMessage(hwnd, WM_PAINT, NULL, NULL);
         
     return DefWindowProc(hwnd, msg, wp, lp);
@@ -683,6 +671,8 @@ bool HandleLoginWindow(void* configPointer)
             TranslateMessage(&message);
             DispatchMessage(&message);
         }
+
+        spLoginWindow->ClearWidgets();
 
         if ((!spClient->IsOfflineMode()) && (spClient->GetAuthToken().empty() || spClient->GetRefreshToken().empty()))
         {

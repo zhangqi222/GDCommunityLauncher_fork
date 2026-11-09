@@ -7,6 +7,7 @@
 #include "ItemReplicaInfo.h"
 #include "HTTP.h"
 #include "JSON.h"
+#include "MD5.h"
 #include "Log.h"
 
 std::string HandleWriteGetStashFile(uint32_t requestID, uint32_t& participantID)
@@ -30,10 +31,10 @@ std::string HandleWriteSaveStashFile(uint32_t requestID, uint32_t& participantID
         { "RequestId", requestID },
         { "Arguments", {
             { "SeasonParticipantId", participantID },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -135,7 +136,11 @@ void HandleReadGetStashFile(const json& response, uint32_t participantID)
 void HandleReadSaveStashFile(const json& response, uint32_t participantID, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantStashFile", participantID, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save shared stash file: %", response.at("ErrorMessage"));
     }

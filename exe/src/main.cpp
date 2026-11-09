@@ -18,21 +18,19 @@ inline static std::unique_ptr<Configuration> LoadConfiguration(const std::filesy
 {
     std::unique_ptr<Configuration> config = std::make_unique<Configuration>();
     if (std::filesystem::is_regular_file(configPath))
-    {
         config->Load(configPath);
-    }
-    else
-    {
-        // If the file doesn't exist, create it using some default values
-        config->SetValue("Login", "hostname", DEFAULT_HOST_NAME);
-        config->SetValue("Login", "username", "");
-        config->SetValue("Login", "password", "");
-        config->SetValue("Login", "autologin", false);
-        config->SetValue("Login", "branch", "1");
-        config->SetValue("Login", "region", "0");
-        config->SetValue("Login", "compatibility_mode", false);
-        config->Save(configPath);
-    }
+
+    // Set default values if they don't exist in the config
+    if (!config->HasValue("Login", "hostname"))  config->SetValue("Login", "hostname", DEFAULT_HOST_NAME);
+    if (!config->HasValue("Login", "username"))  config->SetValue("Login", "username", "");
+    if (!config->HasValue("Login", "password"))  config->SetValue("Login", "password", "");
+    if (!config->HasValue("Login", "autologin")) config->SetValue("Login", "autologin", false);
+    if (!config->HasValue("Login", "branch"))    config->SetValue("Login", "branch", "1");
+    if (!config->HasValue("Login", "region"))    config->SetValue("Login", "region", "0");
+    if (!config->HasValue("Login", "compatibility_mode")) config->SetValue("Login", "compatibility_mode", false);
+
+    config->Save(configPath);
+
     return config;
 }
 
@@ -115,6 +113,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR pCmdLin
     config->Save(configPath);
 
     ContextManager::Stop();
+    spFontManager->ClearFonts();
     Gdiplus::GdiplusShutdown(gdipToken);
 
     ReleaseMutex(mutex);

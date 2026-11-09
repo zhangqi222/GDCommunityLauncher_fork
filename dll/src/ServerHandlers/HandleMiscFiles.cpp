@@ -1,11 +1,13 @@
 #include <string>
 #include "GameAPI.h"
 #include "ServerCache.h"
+#include "ServerHandler.h"
 #include "FileReader.h"
 #include "FileWriter.h"
 #include "Quest.h"
 #include "HTTP.h"
 #include "JSON.h"
+#include "MD5.h"
 #include "Log.h"
 
 std::string HandleWriteGetTagFile(uint32_t requestID, uint32_t& participantID)
@@ -29,10 +31,10 @@ std::string HandleWriteSaveTagFile(uint32_t requestID, uint32_t& participantID, 
         { "RequestId", requestID },
         { "Arguments", {
             { "SeasonParticipantId", participantID },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -57,10 +59,10 @@ std::string HandleWriteSaveTransmuteFile(uint32_t requestID, uint32_t& participa
         { "RequestId", requestID },
         { "Arguments", {
             { "SeasonParticipantId", participantID },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -85,10 +87,10 @@ std::string HandleWriteSaveFormulasFile(uint32_t requestID, uint32_t& participan
         { "RequestId", requestID },
         { "Arguments", {
             { "SeasonParticipantId", participantID },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -117,10 +119,10 @@ std::string HandleWriteSaveQuestFile(uint32_t requestID, uint32_t& participantID
             { "SeasonParticipantId", participantID },
             { "CharacterName", WideToChar(characterName) },
             { "Difficulty", GameAPI::GetGameDifficultyName(difficulty) },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -149,10 +151,10 @@ std::string HandleWriteSaveConversationFile(uint32_t requestID, uint32_t& partic
             { "SeasonParticipantId", participantID },
             { "CharacterName", WideToChar(characterName) },
             { "Difficulty", GameAPI::GetGameDifficultyName(difficulty) },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -181,10 +183,10 @@ std::string HandleWriteSaveMapFile(uint32_t requestID, uint32_t& participantID, 
             { "SeasonParticipantId", participantID },
             { "CharacterName", WideToChar(characterName) },
             { "Difficulty", GameAPI::GetGameDifficultyName(difficulty) },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -213,10 +215,10 @@ std::string HandleWriteSaveFOWFile(uint32_t requestID, uint32_t& participantID, 
             { "SeasonParticipantId", participantID },
             { "CharacterName", WideToChar(characterName) },
             { "Difficulty", GameAPI::GetGameDifficultyName(difficulty) },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -242,10 +244,10 @@ std::string HandleWriteSavePotionsFile(uint32_t requestID, uint32_t& participant
         { "RequestId", requestID },
         { "Arguments", {
             { "SeasonParticipantId", participantID },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -270,10 +272,10 @@ std::string HandleWriteSaveReagentsFile(uint32_t requestID, uint32_t& participan
         { "RequestId", requestID },
         { "Arguments", {
             { "SeasonParticipantId", participantID },
+            { "Checksum", GenerateBufferMD5(base64Data) },
         }},
         { "File", base64Data }
     };
-    base64Data.clear();
     return request.dump();
 }
 
@@ -305,7 +307,11 @@ void HandleReadGetTagFile(const json& response, uint32_t participantID)
 void HandleReadSaveTagFile(const json& response, uint32_t participantID, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantTagFile", participantID, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save shared tags file: %", response.at("ErrorMessage"));
     }
@@ -343,7 +349,11 @@ void HandleReadGetTransmuteFile(const json& response, uint32_t participantID)
 void HandleReadSaveTransmuteFile(const json& response, uint32_t participantID, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantTransmutes", participantID, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save shared transmutes file: %", response.at("ErrorMessage"));
     }
@@ -380,7 +390,11 @@ void HandleReadGetFormulasFile(const json& response, uint32_t participantID)
 void HandleReadSaveFormulasFile(const json& response, uint32_t participantID, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantFormulas", participantID, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save shared formulas file: %", response.at("ErrorMessage"));
     }
@@ -417,7 +431,11 @@ void HandleReadGetQuestFile(const json& response, uint32_t participantID, std::w
 void HandleReadSaveQuestFile(const json& response, uint32_t participantID, std::wstring characterName, GameAPI::Difficulty difficulty, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantCharacterQuestFile", participantID, characterName, difficulty, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save character quest file: %", response.at("ErrorMessage"));
     }
@@ -454,7 +472,11 @@ void HandleReadGetConversationFile(const json& response, uint32_t participantID,
 void HandleReadSaveConversationFile(const json& response, uint32_t participantID, std::wstring characterName, GameAPI::Difficulty difficulty, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantCharacterConversationsFile", participantID, characterName, difficulty, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save character conversation file: %", response.at("ErrorMessage"));
     }
@@ -491,7 +513,11 @@ void HandleReadGetMapFile(const json& response, uint32_t participantID, std::wst
 void HandleReadSaveMapFile(const json& response, uint32_t participantID, std::wstring characterName, GameAPI::Difficulty difficulty, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantCharacterMapDatFile", participantID, characterName, difficulty, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save character map file: %", response.at("ErrorMessage"));
     }
@@ -528,7 +554,11 @@ void HandleReadGetFOWFile(const json& response, uint32_t participantID, std::wst
 void HandleReadSaveFOWFile(const json& response, uint32_t participantID, std::wstring characterName, GameAPI::Difficulty difficulty, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantCharacterMapFowFile", participantID, characterName, difficulty, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save character FOW file: %", response.at("ErrorMessage"));
     }
@@ -565,7 +595,11 @@ void HandleReadGetPotionsFile(const json& response, uint32_t participantID)
 void HandleReadSavePotionsFile(const json& response, uint32_t participantID, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantPotionsFile", participantID, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save potions file: %", response.at("ErrorMessage"));
     }
@@ -602,7 +636,11 @@ void HandleReadGetReagentsFile(const json& response, uint32_t participantID)
 void HandleReadSaveReagentsFile(const json& response, uint32_t participantID, std::string base64Data)
 {
     HTTPStatus status = response.at("StatusCode").get<HTTPStatus>();
-    if (status != HTTP_STATUS_OK)
+    if (status == HTTP_STATUS_BAD_REQUEST)
+    {
+        spServer->Send("SaveParticipantReagentsFile", participantID, base64Data);
+    }
+    else if (status != HTTP_STATUS_OK)
     {
         Logger::LogMessage(LOG_LEVEL_ERROR, "Failed to save reagents file: %", response.at("ErrorMessage"));
     }
